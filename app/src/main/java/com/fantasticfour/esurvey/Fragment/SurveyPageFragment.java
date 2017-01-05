@@ -57,7 +57,7 @@ public class SurveyPageFragment extends Fragment {
     SurveyPage page;
     List<Question> questions;
 
-    private HashMap<Integer, View> questionMap = new HashMap<>();
+    private HashMap<String, View> questionMap = new HashMap<>();
 
     Database db;
 
@@ -133,21 +133,19 @@ public class SurveyPageFragment extends Fragment {
             switch (type){
                 case "Textbox":
                     et = new EditText(getContext());
-                    et.setId(question.getId());
                     content.addView(et, layoutParams);
-                    questionMap.put(question.getId(), et);
+                    questionMap.put("question"+question.getId(), et);
                     break;
                 case "Text Area":
                     et = new EditText(getContext());
-                    et.setId(question.getId());
                     et.setSingleLine(false);
                     et.setImeOptions(EditorInfo.IME_FLAG_NO_ENTER_ACTION);
                     et.setLines(4);
                     content.addView(et, layoutParams);
+                    questionMap.put("question"+question.getId(), et);
                     break;
                 case "Multiple Choice":
                     RadioGroup group = new RadioGroup(getContext());
-                    group.setId(question.getId());
                     group.setOrientation(LinearLayout.VERTICAL);
                     for (QuestionChoice choice : question.getChoices()){
                         RadioButton radio = new RadioButton(getContext());
@@ -156,6 +154,7 @@ public class SurveyPageFragment extends Fragment {
                         group.addView(radio);
                     }
                     content.addView(group, layoutParams);
+                    questionMap.put("question"+question.getId(), group);
                     break;
                 case "Dropdown":
                     Spinner spinner = new Spinner(getContext());
@@ -166,17 +165,17 @@ public class SurveyPageFragment extends Fragment {
                     ArrayAdapter<String> adapter =
                             new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, choices);
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    spinner.setId(question.getId());
                     spinner.setAdapter(adapter);
                     content.addView(spinner,wrapParams);
+                    questionMap.put("question"+question.getId(), spinner);
                     break;
 
                 case "Checkbox":
                     for (QuestionChoice choice : question.getChoices()){
                         CheckBox checkbox = new CheckBox(getContext());
                         checkbox.setText(choice.getLabel());
-                        checkbox.setId(choice.getId());
                         content.addView(checkbox);
+                        questionMap.put("choice"+choice.getId(), checkbox);
                     }
                     break;
                 case "Rating Scale":
@@ -184,8 +183,8 @@ public class SurveyPageFragment extends Fragment {
                     rating.setIsIndicator(false);
                     rating.setNumStars(question.getOption().getMax_rating());
                     rating.setStepSize(1);
-                    rating.setId(question.getId());
                     content.addView(rating, wrapParams);
+                    questionMap.put("question"+question.getId(), rating);
                     break;
                 case "Likert Scale":
                     for (QuestionRow row : question.getRows()){
@@ -195,7 +194,6 @@ public class SurveyPageFragment extends Fragment {
                         content.addView(rowTitle);
 
                         RadioGroup rowGroup = new RadioGroup(getContext());
-                        rowGroup.setId(question.getId());
                         rowGroup.setOrientation(LinearLayout.VERTICAL);
                         for (QuestionChoice choice : question.getChoices()){
                             RadioButton radio = new RadioButton(getContext());
@@ -204,6 +202,7 @@ public class SurveyPageFragment extends Fragment {
                             rowGroup.addView(radio);
                         }
                         content.addView(rowGroup, layoutParams);
+                        questionMap.put("row"+row.getId(), rowGroup);
                     }
                     break;
                 default:
@@ -222,7 +221,7 @@ public class SurveyPageFragment extends Fragment {
             switch (question.getQuestion_type().getType()) {
                 case "Textbox":
                 case "Text Area":
-                    EditText edit = (EditText) content.findViewById(question.getId());
+                    EditText edit = (EditText) questionMap.get("question"+question.getId());
                     textAnswer = edit.getText().toString();
                     if(question.getIs_mandatory() == 1) {
                         if (textAnswer.matches("")) {
@@ -232,7 +231,7 @@ public class SurveyPageFragment extends Fragment {
                     }
                     break;
                 case "Multiple Choice":
-                    RadioGroup group = (RadioGroup) content.findViewById(question.getId());
+                    RadioGroup group = (RadioGroup) questionMap.get("question"+question.getId());
                     choiceId = group.getCheckedRadioButtonId();
                     Log.d(Config.TAG, "mc choice selected -> " +choiceId);
                     if(question.getIs_mandatory() == 1){
@@ -246,13 +245,13 @@ public class SurveyPageFragment extends Fragment {
                     }
                     break;
                 case "Dropdown":
-                    Spinner spinner = (Spinner) content.findViewById(question.getId());
+                    Spinner spinner = (Spinner) questionMap.get("question"+question.getId());
                     List<QuestionChoice> choices = question.getChoices();
                     choiceId = choices.get(spinner.getSelectedItemPosition()).getId();
                     break;
 
                 case "Rating Scale":
-                    RatingBar rating = (RatingBar) content.findViewById(question.getId());
+                    RatingBar rating = (RatingBar) questionMap.get("question"+question.getId());
                     Log.d(Config.TAG, "rating -> " +rating.getRating());
                     if(question.getIs_mandatory() == 1){
                         if(rating.getRating() == 0){
@@ -266,7 +265,7 @@ public class SurveyPageFragment extends Fragment {
                     List<ResponseDetail> checkList = new ArrayList<>();
                     CheckBox lastCheckbox;
                     for (QuestionChoice choice : question.getChoices()){
-                        CheckBox checkbox = (CheckBox) content.findViewById(choice.getId());
+                        CheckBox checkbox = (CheckBox) questionMap.get("choice"+choice.getId());
                         lastCheckbox = checkbox;
                         Log.d(Config.TAG, "checkbox -> " +checkbox.getText().toString() +" selected -> " +checkbox.isSelected());
                         if(checkbox.isChecked()){
@@ -284,7 +283,7 @@ public class SurveyPageFragment extends Fragment {
                 case "Likert Scale":
                     List<ResponseDetail> rows = new ArrayList<>();
                     for (QuestionRow row : question.getRows()){
-                        RadioGroup rowGroup = (RadioGroup) content.findViewById(row.getId());
+                        RadioGroup rowGroup = (RadioGroup) questionMap.get("row"+row.getId());
                         choiceId = rowGroup.getCheckedRadioButtonId();
                         Log.d(Config.TAG, "ls choice selected -> " +choiceId);
                         rows.add(new ResponseDetail(0, question.getId(), null, choiceId, row.getId()));
