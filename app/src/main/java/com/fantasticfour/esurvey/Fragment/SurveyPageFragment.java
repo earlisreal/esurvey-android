@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Color;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -35,6 +36,7 @@ import com.fantasticfour.esurvey.Objects.ResponseDetail;
 import com.fantasticfour.esurvey.Objects.SurveyPage;
 import com.fantasticfour.esurvey.R;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +45,7 @@ import java.util.List;
  * A simple {@link Fragment} subclass.
  */
 public class SurveyPageFragment extends Fragment {
+
     public interface ButtonClickListener{
         void onSubmit(List<ResponseDetail> details);
     }
@@ -56,6 +59,8 @@ public class SurveyPageFragment extends Fragment {
 
     SurveyPage page;
     List<Question> questions;
+
+    String filesDir;
 
     private HashMap<String, View> questionMap = new HashMap<>();
 
@@ -97,6 +102,9 @@ public class SurveyPageFragment extends Fragment {
         db = new Database(getContext());
         page = db.getPage(args.getInt("survey_page_id"));
         Log.d(Config.TAG, "pages passed -> " +page.getId());
+
+        filesDir = args.getString("dir");
+
         questions = page.getQuestions();
         content = (LinearLayout) view.findViewById(R.id.content);
 
@@ -122,11 +130,33 @@ public class SurveyPageFragment extends Fragment {
             content.addView(description, layoutParams);
         }
 
-        for(Question question : questions){
+        for(final Question question : questions){
+            LinearLayout questionTitle = new LinearLayout(getContext());
+            questionTitle.setOrientation(LinearLayout.HORIZONTAL);
+
             TextView title = new TextView(getContext());
             title.setText("Q" +questionNumber++ +". " +question.getQuestion_title());
             title.setId(6996+question.getId());
-            content.addView(title);
+
+            questionTitle.addView(title);
+
+
+            Button speech = new Button(getContext());
+            speech.setText("S");
+            speech.setWidth(50);
+
+            speech.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Log.d(Config.TAG, "onClick: Play speech now!");
+                    playSpeech(question.getId());
+                }
+            });
+
+            questionTitle.addView(speech);
+
+            content.addView(questionTitle);
+
 
             String type = question.getQuestion_type().getType();
             EditText et;
@@ -208,6 +238,18 @@ public class SurveyPageFragment extends Fragment {
                 default:
                     //
             }
+        }
+    }
+
+    private void playSpeech(int id) {
+        MediaPlayer mediaPlayer = new MediaPlayer();
+        try {
+            mediaPlayer.setDataSource(filesDir + "/question" + id + ".wav");
+            mediaPlayer.prepare(); // might take long! (for buffering, etc)
+            mediaPlayer.start();
+            Log.d(Config.TAG, "onClick: Played");
+        } catch (IOException e) {
+            Log.e("EARL IS REAL", "onClick: FAIL", e);
         }
     }
 

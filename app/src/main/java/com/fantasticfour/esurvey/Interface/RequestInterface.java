@@ -8,6 +8,7 @@ import com.fantasticfour.esurvey.Objects.User;
 
 import java.util.List;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
@@ -29,4 +30,7 @@ public interface RequestInterface {
 
     @POST("answer")
     Call<Integer> sendResponse(@Body Response response);
+
+    @GET("speech/{id}")
+    Call<ResponseBody> downloadSpeech(@Path("id") int id);
 }

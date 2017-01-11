@@ -1,8 +1,10 @@
 package com.fantasticfour.esurvey.Activity;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.MediaPlayer;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,17 +25,23 @@ import android.widget.Toast;
 import com.fantasticfour.esurvey.Global.Config;
 import com.fantasticfour.esurvey.Global.Database;
 import com.fantasticfour.esurvey.Global.GlobalFunctions;
+import com.fantasticfour.esurvey.Objects.Question;
 import com.fantasticfour.esurvey.Objects.ServerResponse;
 import com.fantasticfour.esurvey.Objects.Survey;
 import com.fantasticfour.esurvey.Interface.RequestInterface;
+import com.fantasticfour.esurvey.Objects.SurveyPage;
 import com.fantasticfour.esurvey.RecyclerTouchListener;
 import com.fantasticfour.esurvey.SurveyAdapter;
 
 import com.fantasticfour.esurvey.R;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -64,14 +72,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()){
+        switch (item.getItemId()) {
             case R.id.action_sync:
                 syncSurveys();
                 return true;
             case R.id.action_logout:
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.clear();
-                if(editor.commit()){
+                if (editor.commit()) {
                     Intent intent = new Intent(MainActivity.this, LauncherActivity.class);
                     startActivity(intent);
                     finish();
@@ -129,17 +137,17 @@ public class MainActivity extends AppCompatActivity {
         }));
 
         String source = getIntent().getStringExtra("source");
-        if(source.matches("login")){
+        if (source.matches("login")) {
             showLoading();
             surveys = db.getSurveys(userId);
             updateRecyclerView();
             getSurveys();
-        }else if(source.matches("launcher")){
+        } else if (source.matches("launcher")) {
             showLoading();
             surveys = db.getSurveys(userId);
             updateRecyclerView();
             endLoading();
-        }else{ //register
+        } else { //register
             endLoading();
         }
 
@@ -152,21 +160,21 @@ public class MainActivity extends AppCompatActivity {
         updateSurveys();
     }
 
-    private void syncSurveys(){
+    private void syncSurveys() {
         boolean sending = false;
-        if(GlobalFunctions.isOnline(getApplicationContext())){
+        if (GlobalFunctions.isOnline(getApplicationContext())) {
             Log.d(Config.TAG, "survey sync");
             progressDialog = ProgressDialog.show(this, "Syncing Survey Reponses", "Please Wait", true);
-            for (Survey survey : surveys){
-                for (final com.fantasticfour.esurvey.Objects.Response surveyResponse : survey.getResponses()){
-                    if(surveyResponse.getSynced() == 0){
+            for (Survey survey : surveys) {
+                for (final com.fantasticfour.esurvey.Objects.Response surveyResponse : survey.getResponses()) {
+                    if (surveyResponse.getSynced() == 0) {
                         sending = true;
                         final int responseId = surveyResponse.getId();
                         RequestInterface request = GlobalFunctions.getInterface();
                         request.sendResponse(surveyResponse).enqueue(new Callback<Integer>() {
                             @Override
                             public void onResponse(Call<Integer> call, retrofit2.Response<Integer> response) {
-                                if(response.code() == 200){
+                                if (response.code() == 200) {
                                     db.updateResponse(surveyResponse.getId());
                                     surveyResponse.setSynced(1);
                                     updateSurveys();
@@ -187,18 +195,18 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-            if(!sending){
+            if (!sending) {
                 Toast.makeText(this, "No Responses need to Sync", Toast.LENGTH_SHORT).show();
                 endLoading();
             }
-        }else{
+        } else {
             Toast.makeText(this, "No Active Internet Connection", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void updateSurveys(){
+    private void updateSurveys() {
         surveys = db.getSurveys(userId);
-        surveyCountText.setText("Displaying " +surveys.size() +(surveys.size() > 1 ? "Surveys" : "Survey"));
+        surveyCountText.setText("Displaying " + surveys.size() + (surveys.size() > 1 ? "Surveys" : "Survey"));
         updateRecyclerView();
         updateSurveyCount();
 //        if(surveys.size()>0){
@@ -211,12 +219,12 @@ public class MainActivity extends AppCompatActivity {
 //        }
     }
 
-    private void updateSurveyCount(){
-        surveyCountText.setText("Displaying " +surveys.size() +(surveys.size() > 1 ? " Surveys" : " Survey"));
+    private void updateSurveyCount() {
+        surveyCountText.setText("Displaying " + surveys.size() + (surveys.size() > 1 ? " Surveys" : " Survey"));
     }
 
-    public void getSurveys(){
-        if(GlobalFunctions.isOnline(getApplicationContext())){
+    public void getSurveys() {
+        if (GlobalFunctions.isOnline(getApplicationContext())) {
             RequestInterface request = GlobalFunctions.getInterface();
             request.getSurveys(userId).enqueue(new Callback<ServerResponse>() {
                 @Override
@@ -227,6 +235,16 @@ public class MainActivity extends AppCompatActivity {
                     for (Survey survey : surveys) {
                         db.storeSurvey(survey);
                         survey.setResponses(db.getResponses(survey.getId()));
+
+                        //Download VOICE Question Here
+                        for (SurveyPage page : survey.getPages()) {
+                            for (Question question : page.getQuestions()) {
+                                File speech = new File(getFilesDir() + "/question" + question.getId() + ".wav");
+                                if (!speech.exists()) {
+                                    downloadSpeech(question.getId());
+                                }
+                            }
+                        }
                     }
                     surveys = db.getSurveys(userId);
                     updateRecyclerView();
@@ -244,36 +262,68 @@ public class MainActivity extends AppCompatActivity {
                     endLoading();
                 }
             });
-        }else{
+        } else {
             GlobalFunctions.noInternetToast(this);
             swipeRefreshLayout.setRefreshing(false);
             endLoading();
         }
     }
 
+    private void downloadSpeech(final int id) {
+        RequestInterface request = GlobalFunctions.getInterface();
+        request.downloadSpeech(id).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                FileOutputStream outputStream;
+                try {
+                    outputStream = openFileOutput("question" + id + ".wav", Context.MODE_PRIVATE);
+                    outputStream.write(response.body().bytes());
+                    outputStream.close();
+                } catch (Exception e) {
+                    Log.e(Config.TAG, "onResponse: Download Fail", e);
+                }
+            }
 
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.e(Config.TAG, "onFailure: Download Fail!", t);
+            }
+        });
+    }
 
-    private void updateRecyclerView(){
+    private void playSpeech(int id) {
+        MediaPlayer mediaPlayer = new MediaPlayer();
+        try {
+            mediaPlayer.setDataSource(getFilesDir() + "/question" + id + ".wav");
+            mediaPlayer.prepare(); // might take long! (for buffering, etc)
+            mediaPlayer.start();
+            Log.d(Config.TAG, "onClick: Played");
+        } catch (IOException e) {
+            Log.e("EARL IS REAL", "onClick: FAIL", e);
+        }
+    }
+
+    private void updateRecyclerView() {
         Log.d(Config.TAG, "updated recycler view ||");
         surveyAdapter = new SurveyAdapter(surveys);
         recyclerView.setAdapter(surveyAdapter);
 
-        if(surveys.size() > 0){
+        if (surveys.size() > 0) {
             emptyLabel.setVisibility(View.GONE);
-        }else{
+        } else {
             emptyLabel.setVisibility(View.VISIBLE);
         }
     }
 
-    private void showLoading(){
+    private void showLoading() {
         progressDialog = ProgressDialog.show(this, "Loading Surveys", "Please Wait", true);
     }
 
-    private void endLoading(){
+    private void endLoading() {
         progressDialog.dismiss();
     }
 
-    public void refreshSurvey(){
+    public void refreshSurvey() {
 //        tapToRefresh.setOnClickListener(new View.OnClickListener() {
 //            @Override
 //            public void onClick(View view) {
@@ -285,7 +335,6 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        });
     }
-
 
 
 }
