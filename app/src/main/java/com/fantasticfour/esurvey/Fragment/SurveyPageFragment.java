@@ -18,6 +18,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -138,14 +139,16 @@ public class SurveyPageFragment extends Fragment {
             title.setText("Q" +questionNumber++ +". " +question.getQuestion_title());
             title.setId(6996+question.getId());
 
-            questionTitle.addView(title);
 
 
             Button speech = new Button(getContext());
             speech.setText("S");
-            speech.setWidth(50);
 
-            speech.setOnClickListener(new View.OnClickListener() {
+            ImageButton play = new ImageButton(getContext());
+            play.setImageResource(android.R.drawable.ic_lock_silent_mode_off);
+//            speech.setWidth(50);
+
+            play.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     Log.d(Config.TAG, "onClick: Play speech now!");
@@ -153,7 +156,8 @@ public class SurveyPageFragment extends Fragment {
                 }
             });
 
-            questionTitle.addView(speech);
+            questionTitle.addView(play);
+            questionTitle.addView(title);
 
             content.addView(questionTitle);
 
