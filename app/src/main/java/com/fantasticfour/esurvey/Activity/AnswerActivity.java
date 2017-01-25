@@ -132,6 +132,7 @@ public class AnswerActivity extends AppCompatActivity implements SurveyPageFragm
         super.onActivityResult(requestCode, resultCode, data);
         Log.d("EARL IS REAL", "onActivityResult: CODE -> " +resultCode);
         if(requestCode == 100 && data != null){
+            Log.d(Config.TAG, "onActivityResult: SPEECH -> " +data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0));
 //            output.setText(data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0));
         }
     }
@@ -206,8 +207,6 @@ public class AnswerActivity extends AppCompatActivity implements SurveyPageFragm
     public void next(){
         if(fragments.get(index).getAnswers() != null){
             if(index<pages.size()-1){
-                //TODO
-                //CHECK MANDATORY QUESTIONS
                 fragments.get(index).getAnswers();
                 index++;
                 replacePage();
@@ -248,6 +247,7 @@ public class AnswerActivity extends AppCompatActivity implements SurveyPageFragm
                 }
 
                 if(GlobalFunctions.isOnline(this)){
+                    //send to server
                     progressDialog = ProgressDialog.show(this, "Sending Response to the Server", "Please Wait");
                     RequestInterface request = GlobalFunctions.getInterface();
                     request.sendResponse(surveyResponse).enqueue(new Callback<Integer>() {
@@ -269,12 +269,11 @@ public class AnswerActivity extends AppCompatActivity implements SurveyPageFragm
 
                         @Override
                         public void onFailure(Call<Integer> call, Throwable t) {
-                            Log.e(Config.TAG, t.getMessage());
+                            Log.e(Config.TAG, "Error sending to server",t);
                             progressDialog.dismiss();
                             finish();
                         }
                     });
-                    //send to server
                 }else{
                     finish();
                 }

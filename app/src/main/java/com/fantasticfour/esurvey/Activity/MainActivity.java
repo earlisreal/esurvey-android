@@ -239,7 +239,8 @@ public class MainActivity extends AppCompatActivity {
                         //Download VOICE Question Here
                         for (SurveyPage page : survey.getPages()) {
                             for (Question question : page.getQuestions()) {
-                                File speech = new File(getFilesDir() + "/question" + question.getId() + ".wav");
+                                Log.d(Config.TAG, "onResponse: QUestion downloading...");
+                                File speech = new File(getFilesDir() + "/question" + question.getId() + ".mp3");
                                 if (!speech.exists()) {
                                     downloadSpeech(question.getId());
                                 }
@@ -276,9 +277,10 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 FileOutputStream outputStream;
                 try {
-                    outputStream = openFileOutput("question" + id + ".wav", Context.MODE_PRIVATE);
+                    outputStream = openFileOutput("question" + id + ".mp3", Context.MODE_PRIVATE);
                     outputStream.write(response.body().bytes());
                     outputStream.close();
+                    Log.d(Config.TAG, "onResponse: Download Success!");
                 } catch (Exception e) {
                     Log.e(Config.TAG, "onResponse: Download Fail", e);
                 }
@@ -294,7 +296,7 @@ public class MainActivity extends AppCompatActivity {
     private void playSpeech(int id) {
         MediaPlayer mediaPlayer = new MediaPlayer();
         try {
-            mediaPlayer.setDataSource(getFilesDir() + "/question" + id + ".wav");
+            mediaPlayer.setDataSource(getFilesDir() + "/question" + id + ".mp3");
             mediaPlayer.prepare(); // might take long! (for buffering, etc)
             mediaPlayer.start();
             Log.d(Config.TAG, "onClick: Played");

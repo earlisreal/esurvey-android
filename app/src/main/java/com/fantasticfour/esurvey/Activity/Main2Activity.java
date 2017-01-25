@@ -3,10 +3,12 @@ package com.fantasticfour.esurvey.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.speech.RecognizerIntent;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -22,6 +24,7 @@ import com.fantasticfour.esurvey.Interface.RequestInterface;
 import com.fantasticfour.esurvey.R;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -86,22 +89,34 @@ public class Main2Activity extends AppCompatActivity {
         request.downloadSpeech(id).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-//                boolean saved = writeResponseBodyToDisk(response.body());
+                boolean saved = writeResponseBodyToDisk(response.body());
 
                 Log.d(TAG, "onResponse: response -> " +response.toString());
-//                Log.d(TAG, "onResponse: FIle saved : " +saved);
+                Log.d(TAG, "onResponse: FIle saved : " +saved);
 //                String filename = "myfile";
 
                 FileOutputStream outputStream;
 
                 try {
-                    outputStream = openFileOutput("question" +id +".wav", Context.MODE_PRIVATE);
+                    outputStream = openFileOutput("question" +id +".wav", Context.MODE_WORLD_READABLE);
                     outputStream.write(response.body().bytes());
                     outputStream.close();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
 
+                Log.d(TAG, "onResponse: PATH -> " +getExternalFilesDir(null) + File.separator +  "earlisrealresult.wav");
+
+                MediaPlayer mediaPlayer = new MediaPlayer();
+                try {
+//                    FileInputStream fis = new FileInputStream(getFilesDir() +"/question" +id +".wav");
+                    mediaPlayer.setDataSource(getExternalFilesDir(null) + File.separator +  "earlisrealresult.wav");
+                    mediaPlayer.prepare(); // might take long! (for buffering, etc)
+                    mediaPlayer.start();
+                    Log.d(TAG, "onClick: Played");
+                } catch (IOException e) {
+                    Log.e("EARL IS REAL", "onClick: FAIL", e);
+                }
 
                 testPlay(id);
             }
@@ -128,7 +143,7 @@ public class Main2Activity extends AppCompatActivity {
     private boolean writeResponseBodyToDisk(ResponseBody body) {
         try {
             // todo change the file location/name according to your needs
-            File futureStudioIconFile = new File(getExternalFilesDir(null) + File.separator +  "result.wav");
+            File futureStudioIconFile = new File(getExternalFilesDir(null) + File.separator +  "earlisrealresult.wav");
 
             InputStream inputStream = null;
             OutputStream outputStream = null;

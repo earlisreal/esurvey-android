@@ -63,33 +63,4 @@
         android:id="@+id/button2"
         android:onClick="getSpeech" />
 
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/button2"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true">
-
-        <TextView
-            android:text="This is a very long text that you cannot read when your laze This is a very long text that you cannot read when your laze"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/textView4"
-            android:layout_weight="1" />
-
-        <ImageButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:srcCompat="@android:drawable/ic_lock_silent_mode_off"
-            android:layout_alignBottom="@+id/questionId"
-            android:layout_toRightOf="@+id/button"
-            android:layout_toEndOf="@+id/button"
-            android:layout_marginLeft="24dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginBottom="19dp"
-            android:id="@+id/imageButton3" />
-
-    </LinearLayout>
-
 </RelativeLayout>

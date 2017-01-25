@@ -2,11 +2,15 @@ package com.fantasticfour.esurvey.Fragment;
 
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -37,10 +41,14 @@ import com.fantasticfour.esurvey.Objects.ResponseDetail;
 import com.fantasticfour.esurvey.Objects.SurveyPage;
 import com.fantasticfour.esurvey.R;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -65,6 +73,10 @@ public class SurveyPageFragment extends Fragment {
 
     private HashMap<String, View> questionMap = new HashMap<>();
 
+    EditText speechET;
+
+    Context context;
+
     Database db;
 
 //    @Override
@@ -83,6 +95,7 @@ public class SurveyPageFragment extends Fragment {
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
+        context = activity.getApplicationContext();
 //        Activity activity = context instanceof MainActivity ? ((MainActivity) context) : null;
         try {
             buttonListener = (ButtonClickListener) activity;
@@ -163,11 +176,32 @@ public class SurveyPageFragment extends Fragment {
 
 
             String type = question.getQuestion_type().getType();
-            EditText et;
+            final EditText et;
             switch (type){
                 case "Textbox":
+                    LinearLayout questionContainer = new LinearLayout(getContext());
+                    questionTitle.setOrientation(LinearLayout.HORIZONTAL);
                     et = new EditText(getContext());
-                    content.addView(et, layoutParams);
+
+                    LinearLayout.LayoutParams etParams = new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                    etParams.setMargins(0, 0, 0, 30);
+
+                    ImageButton speak = new ImageButton(getContext());
+                    speak.setImageResource(android.R.drawable.ic_btn_speak_now);
+
+                    speak.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            speechET = et;
+                            speak();
+                        }
+                    });
+
+                    questionContainer.addView(et, etParams);
+                    questionContainer.addView(speak, wrapParams);
+
+                    content.addView(questionContainer, layoutParams);
                     questionMap.put("question"+question.getId(), et);
                     break;
                 case "Text Area":
@@ -246,17 +280,47 @@ public class SurveyPageFragment extends Fragment {
     }
 
     private void playSpeech(int id) {
-        MediaPlayer mediaPlayer = new MediaPlayer();
+              MediaPlayer mediaPlayer = new MediaPlayer();
         try {
-            mediaPlayer.setDataSource(filesDir + "/question" + id + ".wav");
+            File file = new File(filesDir + "/question" + id + ".mp3");
+            FileInputStream test = getContext().openFileInput("question" + id + ".mp3");
+//            mediaPlayer.reset();
+//            mediaPlayer.setDataSource(test.getFD());
+//            mediaPlayer.setDataSource(file.getPath());
+            mediaPlayer.setDataSource(filesDir + "/question" + id + ".mp3");
             mediaPlayer.prepare(); // might take long! (for buffering, etc)
             mediaPlayer.start();
             Log.d(Config.TAG, "onClick: Played");
         } catch (IOException e) {
             Log.e("EARL IS REAL", "onClick: FAIL", e);
         }
+
+
     }
 
+    private void speak(){
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak Now!");
+        try{
+            startActivityForResult(intent, 100);
+        }catch (ActivityNotFoundException e){
+            Log.e("EARL IS REAL", "speak: FAIL", e);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d("EARL IS REAL", "onActivityResult: CODE -> " +resultCode);
+        if(requestCode == 100 && data != null){
+            Log.d(Config.TAG, "onActivityResult: SPEECH -> " +data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0));
+            speechET.setText(data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0));
+//            output.setText(data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0));
+        }
+    }
 
     public List<ResponseDetail> getAnswers(){
         boolean hasError = false;
