@@ -3,6 +3,7 @@ package com.fantasticfour.esurvey.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,6 +17,11 @@ import com.fantasticfour.esurvey.Global.GlobalFunctions;
 import com.fantasticfour.esurvey.Objects.User;
 import com.fantasticfour.esurvey.R;
 import com.fantasticfour.esurvey.Interface.RequestInterface;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -32,10 +38,22 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        preferences = getSharedPreferences("eSurvey", MODE_PRIVATE);
+
+        if(preferences.getBoolean("logged", false)){
+            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+            intent.putExtra("source", "launcher");
+            startActivity(intent);
+
+            finish();
+        }else{
+            setContentView(R.layout.activity_login);
+        }
+
         usernameEt = (EditText) findViewById(R.id.username);
         passwordEt = (EditText) findViewById(R.id.password);
 
-        preferences = getSharedPreferences("eSurvey", MODE_PRIVATE);
+//        preferences = getSharedPreferences("eSurvey", MODE_PRIVATE);
     }
 
     public void test(View v){

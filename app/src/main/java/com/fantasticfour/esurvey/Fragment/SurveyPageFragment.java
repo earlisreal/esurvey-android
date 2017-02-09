@@ -11,6 +11,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -50,6 +51,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
+import static com.fantasticfour.esurvey.Global.Config.TAG;
+
 /**
  * A simple {@link Fragment} subclass.
  */
@@ -74,6 +77,8 @@ public class SurveyPageFragment extends Fragment {
     private HashMap<String, View> questionMap = new HashMap<>();
 
     EditText speechET;
+
+    TextToSpeech tts;
 
     Context context;
 
@@ -115,7 +120,7 @@ public class SurveyPageFragment extends Fragment {
         Bundle args = getArguments();
         db = new Database(getContext());
         page = db.getPage(args.getInt("survey_page_id"));
-        Log.d(Config.TAG, "pages passed -> " +page.getId());
+        Log.d(TAG, "pages passed -> " +page.getId());
 
         filesDir = args.getString("dir");
 
@@ -124,6 +129,13 @@ public class SurveyPageFragment extends Fragment {
 
         loadQuestions(view);
         submitResponse(view);
+
+        tts = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+
+            }
+        });
 
         return view;
     }
@@ -164,8 +176,9 @@ public class SurveyPageFragment extends Fragment {
             play.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Log.d(Config.TAG, "onClick: Play speech now!");
-                    playSpeech(question.getId());
+                    Log.d(TAG, "onClick: Play speech now!");
+//                    playSpeech(question.getId());
+                textToSpeech(question.getQuestion_title());
                 }
             });
 
@@ -283,19 +296,34 @@ public class SurveyPageFragment extends Fragment {
               MediaPlayer mediaPlayer = new MediaPlayer();
         try {
             File file = new File(filesDir + "/question" + id + ".mp3");
-            FileInputStream test = getContext().openFileInput("question" + id + ".mp3");
+            Log.d(TAG, "playSpeech: " +file.exists());
+            if(file.exists()){
+//                FileInputStream test = getContext().openFileInput("question" + id + ".mp3");
 //            mediaPlayer.reset();
 //            mediaPlayer.setDataSource(test.getFD());
-//            mediaPlayer.setDataSource(file.getPath());
-            mediaPlayer.setDataSource(filesDir + "/question" + id + ".mp3");
-            mediaPlayer.prepare(); // might take long! (for buffering, etc)
-            mediaPlayer.start();
-            Log.d(Config.TAG, "onClick: Played");
+                mediaPlayer.setDataSource(file.getPath());
+//                mediaPlayer.setDataSource(filesDir + "/question" + id + ".mp3");
+                mediaPlayer.prepare(); // might take long! (for buffering, etc)
+                mediaPlayer.start();
+                Log.d(TAG, "onClick: Played");
+            }
         } catch (IOException e) {
             Log.e("EARL IS REAL", "onClick: FAIL", e);
         }
 
+    }
 
+    private void textToSpeech(String text){
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+    }
+
+    @Override
+    public void onPause() {
+        if(tts != null){
+            tts.stop();
+            tts.shutdown();
+        }
+        super.onPause();
     }
 
     private void speak(){
@@ -316,7 +344,7 @@ public class SurveyPageFragment extends Fragment {
         super.onActivityResult(requestCode, resultCode, data);
         Log.d("EARL IS REAL", "onActivityResult: CODE -> " +resultCode);
         if(requestCode == 100 && data != null){
-            Log.d(Config.TAG, "onActivityResult: SPEECH -> " +data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0));
+            Log.d(TAG, "onActivityResult: SPEECH -> " +data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0));
             speechET.setText(data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0));
 //            output.setText(data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0));
         }
@@ -343,11 +371,11 @@ public class SurveyPageFragment extends Fragment {
                 case "Multiple Choice":
                     RadioGroup group = (RadioGroup) questionMap.get("question"+question.getId());
                     choiceId = group.getCheckedRadioButtonId();
-                    Log.d(Config.TAG, "mc choice selected -> " +choiceId);
+                    Log.d(TAG, "mc choice selected -> " +choiceId);
                     if(question.getIs_mandatory() == 1){
-                        Log.d(Config.TAG, "mandatory mc");
+                        Log.d(TAG, "mandatory mc");
                         if(choiceId <= 0){
-                            Log.d(Config.TAG, "mc has error");
+                            Log.d(TAG, "mc has error");
                             TextView label = (TextView) content.findViewById(6996+question.getId());
                             label.setError("Required Question");
                             hasError = true;
@@ -362,7 +390,7 @@ public class SurveyPageFragment extends Fragment {
 
                 case "Rating Scale":
                     RatingBar rating = (RatingBar) questionMap.get("question"+question.getId());
-                    Log.d(Config.TAG, "rating -> " +rating.getRating());
+                    Log.d(TAG, "rating -> " +rating.getRating());
                     if(question.getIs_mandatory() == 1){
                         if(rating.getRating() == 0){
                             hasError = true;
@@ -377,7 +405,7 @@ public class SurveyPageFragment extends Fragment {
                     for (QuestionChoice choice : question.getChoices()){
                         CheckBox checkbox = (CheckBox) questionMap.get("choice"+choice.getId());
                         lastCheckbox = checkbox;
-                        Log.d(Config.TAG, "checkbox -> " +checkbox.getText().toString() +" selected -> " +checkbox.isSelected());
+                        Log.d(TAG, "checkbox -> " +checkbox.getText().toString() +" selected -> " +checkbox.isSelected());
                         if(checkbox.isChecked()){
                             checkList.add(new ResponseDetail(0, question.getId(), null, choice.getId()));
                         }
@@ -395,12 +423,12 @@ public class SurveyPageFragment extends Fragment {
                     for (QuestionRow row : question.getRows()){
                         RadioGroup rowGroup = (RadioGroup) questionMap.get("row"+row.getId());
                         choiceId = rowGroup.getCheckedRadioButtonId();
-                        Log.d(Config.TAG, "ls choice selected -> " +choiceId);
+                        Log.d(TAG, "ls choice selected -> " +choiceId);
                         rows.add(new ResponseDetail(0, question.getId(), null, choiceId, row.getId()));
                         if(question.getIs_mandatory() == 1){
-                            Log.d(Config.TAG, "mandatory ls");
+                            Log.d(TAG, "mandatory ls");
                             if(choiceId <= 0){
-                                Log.d(Config.TAG, "mc has error");
+                                Log.d(TAG, "mc has error");
                                 TextView label = (TextView) content.findViewById(6996+question.getId());
                                 label.setError("Please Rate All Fields");
                                 hasError = true;

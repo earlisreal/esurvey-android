@@ -47,6 +47,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import static android.R.attr.id;
+import static android.R.attr.logo;
 
 public class MainActivity extends AppCompatActivity {
     private int userId;
@@ -80,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.clear();
                 if (editor.commit()) {
-                    Intent intent = new Intent(MainActivity.this, LauncherActivity.class);
+                    Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                     startActivity(intent);
                     finish();
                 }
@@ -174,15 +175,16 @@ public class MainActivity extends AppCompatActivity {
                         request.sendResponse(surveyResponse).enqueue(new Callback<Integer>() {
                             @Override
                             public void onResponse(Call<Integer> call, retrofit2.Response<Integer> response) {
+                                Log.d(Config.TAG, "onResponse: " +response.code());
                                 if (response.code() == 200) {
                                     db.updateResponse(surveyResponse.getId());
                                     surveyResponse.setSynced(1);
                                     updateSurveys();
                                     Toast.makeText(MainActivity.this, "Responses Synced Successfully", Toast.LENGTH_SHORT).show();
 
-                                    endLoading();
                                 }
 
+                                endLoading();
                             }
 
                             @Override
@@ -237,15 +239,15 @@ public class MainActivity extends AppCompatActivity {
                         survey.setResponses(db.getResponses(survey.getId()));
 
                         //Download VOICE Question Here
-                        for (SurveyPage page : survey.getPages()) {
-                            for (Question question : page.getQuestions()) {
-                                Log.d(Config.TAG, "onResponse: QUestion downloading...");
-                                File speech = new File(getFilesDir() + "/question" + question.getId() + ".mp3");
-                                if (!speech.exists()) {
-                                    downloadSpeech(question.getId());
-                                }
-                            }
-                        }
+//                        for (SurveyPage page : survey.getPages()) {
+//                            for (Question question : page.getQuestions()) {
+//                                Log.d(Config.TAG, "onResponse: QUestion downloading...");
+//                                File speech = new File(getFilesDir() + "/question" + question.getId() + ".mp3");
+//                                if (!speech.exists()) {
+//                                    downloadSpeech(question.getId());
+//                                }
+//                            }
+//                        }
                     }
                     surveys = db.getSurveys(userId);
                     updateRecyclerView();

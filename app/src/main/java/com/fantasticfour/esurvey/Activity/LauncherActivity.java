@@ -22,28 +22,6 @@ public class LauncherActivity extends AppCompatActivity {
 
         SharedPreferences preferences = getSharedPreferences("eSurvey", MODE_PRIVATE);
 
-        try {
-            File sd = Environment.getExternalStorageDirectory();
-            File data = Environment.getDataDirectory();
-
-            if (sd.canWrite()) {
-                String currentDBPath = "/data/data/" + getPackageName() + "/databases/eSurvey";
-                String backupDBPath = "eSurvey.db";
-                File currentDB = new File(currentDBPath);
-                File backupDB = new File(sd, backupDBPath);
-
-                if (currentDB.exists()) {
-                    FileChannel src = new FileInputStream(currentDB).getChannel();
-                    FileChannel dst = new FileOutputStream(backupDB).getChannel();
-                    dst.transferFrom(src, 0, src.size());
-                    src.close();
-                    dst.close();
-                }
-            }
-        } catch (Exception e) {
-
-        }
-
         if(preferences.getBoolean("logged", false)){
             Intent intent = new Intent(LauncherActivity.this, MainActivity.class);
             intent.putExtra("source", "launcher");

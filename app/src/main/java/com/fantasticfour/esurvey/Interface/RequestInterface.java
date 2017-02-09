@@ -16,21 +16,21 @@ import retrofit2.http.POST;
 import retrofit2.http.Path;
 
 public interface RequestInterface {
-    @POST("register")
+    @POST("android/register")
     Call<User> register(@Body User user);
 
-    @GET("test")
+    @GET("android/test")
     Call<User> getTest();
 
-    @POST("login")
+    @POST("android/login")
     Call<User> login(@Body User user);
 
-    @GET("user/{id}/surveys")
+    @GET("android/user/{id}/surveys")
     Call<ServerResponse> getSurveys(@Path("id") int id);
 
-    @POST("answer")
+    @POST("android/answer")
     Call<Integer> sendResponse(@Body Response response);
 
-    @GET("speech/{id}")
+    @GET("android/speech/{id}")
     Call<ResponseBody> downloadSpeech(@Path("id") int id);
 }

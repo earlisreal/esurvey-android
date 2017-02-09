@@ -10,5 +10,5 @@
 
     <string name="action_settings">Settings</string>
 
-    <string name="create_link"><a href="http://192.168.1.10/esurvey/create">Create your First Survey here</a></string>
+    <string name="create_link"><a href="http://esurvey.me/create">Create your First Survey here</a></string>
 </resources>
